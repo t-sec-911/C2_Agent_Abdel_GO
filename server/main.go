@@ -121,6 +121,7 @@ func handleDashboard(w http.ResponseWriter, r *http.Request) {
                     <option value="shell">shell</option>
                     <option value="info">info</option>
                     <option value="ping">ping</option>
+					<option value="persist">persist</option>
                 </select>
                 
                 <br><br>
