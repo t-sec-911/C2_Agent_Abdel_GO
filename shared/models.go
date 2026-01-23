@@ -14,4 +14,5 @@ type Command struct {
 
 type DashboardData struct {
 	DefaultAgent string
+	output       string
 }

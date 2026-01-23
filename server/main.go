@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"os"
 	"time"
 
 	"sOPown3d/shared"
@@ -23,7 +24,7 @@ func init() {
 func main() {
 	fmt.Println(
 		"=== Serveur sOPown3d - Gestion Commandes ===\n" +
-			"URL: http://127.0.0.1:8080\n" +
+			"URL: http://127.0.0.1:" + os.Getenv("PORT") + "\n" +
 			"Usage académique uniquement\n" +
 			"============================================")
 
@@ -32,7 +33,7 @@ func main() {
 	http.HandleFunc("/command", handleSendCommand)
 	http.HandleFunc("/", handleDashboard)
 
-	err := http.ListenAndServe("127.0.0.1:8080", nil)
+	err := http.ListenAndServe("127.0.0.1:"+os.Getenv("PORT"), nil)
 	if err != nil {
 		fmt.Println("Erreur:", err)
 	}
@@ -112,5 +113,7 @@ func handleIngest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte(output))
+	w.Write([]byte(output)) // A quoi sert cette ligne ??
+	fmt.Printf("> %s\n", output)
+
 }

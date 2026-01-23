@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="build agent" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="sOPown3d" />
+    <working_directory value="$PROJECT_DIR$/agent" />
+    <envs>
+      <env name="PORT" value="8080" />
+    </envs>
+    <kind value="PACKAGE" />
+    <package value="sOPown3d/agent" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$" />
+    <pty_enabled value="true" />
+    <method v="2" />
+  </configuration>
+</component>
