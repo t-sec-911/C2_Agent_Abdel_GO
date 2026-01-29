@@ -1,0 +1,44 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Code coverage profiles and other test artifacts
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Build artifacts
+bin/
+dist/
+
+# Configuration files with secrets
+config.yaml
+test_config.yaml
+*.key
+*.pem
+
+# Agent state files
+.agent_state
+
+# env file
+.env
+
+# Editor/IDE
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+

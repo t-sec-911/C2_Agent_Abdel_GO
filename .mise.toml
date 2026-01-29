@@ -1,0 +1,5 @@
+[tools]
+go = "1.25"
+
+[settings]
+auto_install = true
