@@ -158,7 +158,7 @@ func executeCommand(cmd *shared.Command) string {
 				output = string(result)
 			}
 
-			fmt.Printf(output)
+			fmt.Printf("%s", output)
 			return output
 		}
 
@@ -196,7 +196,7 @@ func sendOutput(url string, output string) {
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err == nil {
 		if result != "" {
-			fmt.Printf(result)
+			fmt.Printf("%s", result)
 		}
 	}
 }
