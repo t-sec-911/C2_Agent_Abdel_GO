@@ -21,6 +21,7 @@ go.work.sum
 # Build artifacts
 bin/
 dist/
+build/
 
 # Configuration files with secrets
 config.yaml
