@@ -71,7 +71,7 @@ func main() {
 	}
 
 	// Create server
-	srv, err := server.New(cfg, lgr, store, activityChecker, cleanupScheduler)
+	srv, err := server.New(cfg, lgr, store, activityChecker, cleanupScheduler, db)
 	if err != nil {
 		lgr.Error(logger.CategoryError, "failed to create server: %v", err)
 		return

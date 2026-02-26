@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Explorer — sOPown3d</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-0: #09090b;
+            --bg-1: #0f0f12;
+            --bg-2: #16161a;
+            --bg-3: #1c1c22;
+            --bg-hover: #23232b;
+            --bg-active: #2a2a34;
+            --border-0: #1e1e26;
+            --border-1: #27272f;
+            --border-2: #333340;
+            --text-0: #fafafa;
+            --text-1: #a1a1aa;
+            --text-2: #71717a;
+            --text-3: #52525b;
+            --blue: #3b82f6;
+            --blue-dim: rgba(59,130,246,0.12);
+            --green: #22c55e;
+            --green-dim: rgba(34,197,94,0.1);
+            --red: #ef4444;
+            --red-dim: rgba(239,68,68,0.1);
+            --amber: #f59e0b;
+            --amber-dim: rgba(245,158,11,0.1);
+            --mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --sans: 'Inter', -apple-system, system-ui, sans-serif;
+            --radius: 6px;
+            --transition: 120ms ease;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg-0);
+            color: var(--text-0);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ═══════════ SIDEBAR ═══════════ */
+        .sidebar {
+            width: 200px;
+            background: var(--bg-1);
+            border-right: 1px solid var(--border-0);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sidebar-brand {
+            padding: 20px 16px;
+            border-bottom: 1px solid var(--border-0);
+        }
+
+        .sidebar-brand h1 {
+            font-family: var(--mono);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-0);
+            letter-spacing: -0.3px;
+        }
+
+        .sidebar-brand p {
+            font-size: 10px;
+            color: var(--text-3);
+            margin-top: 2px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .sidebar-nav { padding: 8px; flex: 1; }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: var(--radius);
+            color: var(--text-2);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all var(--transition);
+            margin-bottom: 2px;
+        }
+
+        .nav-item svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+        .nav-item:hover { background: var(--bg-hover); color: var(--text-1); }
+
+        .nav-item.active {
+            background: var(--blue-dim);
+            color: var(--blue);
+        }
+
+        /* ═══════════ MAIN ═══════════ */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+        /* ═══════════ TOOLBAR ═══════════ */
+        .toolbar {
+            height: 48px;
+            background: var(--bg-1);
+            border-bottom: 1px solid var(--border-0);
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .toolbar-select {
+            height: 32px;
+            padding: 0 10px;
+            background: var(--bg-2);
+            border: 1px solid var(--border-1);
+            border-radius: var(--radius);
+            color: var(--text-0);
+            font-family: var(--mono);
+            font-size: 12px;
+            min-width: 180px;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            padding-right: 28px;
+        }
+
+        .toolbar-select:focus { border-color: var(--blue); }
+
+        .agent-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--green);
+            padding: 4px 8px;
+            background: var(--green-dim);
+            border-radius: var(--radius);
+        }
+
+        .agent-indicator .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+        .toolbar-divider { width: 1px; height: 20px; background: var(--border-1); margin: 0 4px; }
+
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid transparent;
+            border-radius: var(--radius);
+            background: transparent;
+            color: var(--text-2);
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .icon-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+        .icon-btn:hover { background: var(--bg-hover); border-color: var(--border-1); color: var(--text-1); }
+
+        /* ═══════════ BREADCRUMB ═══════════ */
+        .breadcrumb-bar {
+            height: 36px;
+            background: var(--bg-1);
+            border-bottom: 1px solid var(--border-0);
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            font-family: var(--mono);
+            font-size: 12px;
+            flex-shrink: 0;
+            overflow-x: auto;
+        }
+
+        .bc-segment {
+            color: var(--text-2);
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all var(--transition);
+            white-space: nowrap;
+        }
+
+        .bc-segment:hover { background: var(--bg-hover); color: var(--blue); }
+        .bc-chevron { color: var(--text-3); }
+        .bc-chevron svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; vertical-align: middle; }
+
+        /* ═══════════ SEARCH ═══════════ */
+        .search-panel {
+            background: var(--bg-2);
+            border-bottom: 1px solid var(--border-0);
+            padding: 10px 16px;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .search-panel.open { display: flex; }
+
+        .search-row { display: flex; gap: 8px; align-items: center; }
+
+        .search-input {
+            height: 32px;
+            padding: 0 10px;
+            background: var(--bg-0);
+            border: 1px solid var(--border-1);
+            border-radius: var(--radius);
+            color: var(--text-0);
+            font-family: var(--mono);
+            font-size: 12px;
+            outline: none;
+            flex: 1;
+        }
+
+        .search-input:focus { border-color: var(--blue); }
+
+        .search-select {
+            height: 32px;
+            padding: 0 10px;
+            background: var(--bg-0);
+            border: 1px solid var(--border-1);
+            border-radius: var(--radius);
+            color: var(--text-0);
+            font-family: var(--mono);
+            font-size: 12px;
+            outline: none;
+        }
+
+        .search-select:focus { border-color: var(--blue); }
+
+        .tag-row { display: flex; gap: 4px; flex-wrap: wrap; }
+
+        .tag {
+            height: 24px;
+            padding: 0 8px;
+            display: inline-flex;
+            align-items: center;
+            background: var(--bg-0);
+            border: 1px solid var(--border-1);
+            border-radius: 4px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-2);
+            cursor: pointer;
+            transition: all var(--transition);
+            user-select: none;
+        }
+
+        .tag:hover { border-color: var(--blue); color: var(--blue); }
+        .tag.on { background: var(--blue-dim); border-color: var(--blue); color: var(--blue); }
+
+        .btn {
+            height: 32px;
+            padding: 0 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border: 1px solid var(--border-1);
+            border-radius: var(--radius);
+            background: var(--bg-3);
+            color: var(--text-0);
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition);
+            white-space: nowrap;
+        }
+
+        .btn:hover { border-color: var(--blue); color: var(--blue); }
+        .btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+        .btn-primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+        .btn-primary:hover { background: #2563eb; color: #fff; }
+        .btn-sm { height: 26px; padding: 0 8px; font-size: 11px; }
+
+        /* ═══════════ STATUS ═══════════ */
+        .status-bar {
+            height: 32px;
+            padding: 0 16px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--mono);
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+
+        .status-bar.on { display: flex; }
+        .status-bar.info { background: var(--blue-dim); color: var(--blue); }
+        .status-bar.ok { background: var(--green-dim); color: var(--green); }
+        .status-bar.err { background: var(--red-dim); color: var(--red); }
+        .status-bar.wait { background: var(--amber-dim); color: var(--amber); }
+
+        .loader {
+            width: 12px; height: 12px;
+            border: 2px solid var(--border-1);
+            border-top-color: var(--blue);
+            border-radius: 50%;
+            animation: rotate .5s linear infinite;
+        }
+
+        @keyframes rotate { to { transform: rotate(360deg); } }
+
+        /* ═══════════ TABLE ═══════════ */
+        .table-area { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+        .table-scroll { flex: 1; overflow-y: auto; }
+
+        .ftable { width: 100%; border-collapse: collapse; table-layout: fixed; }
+
+        .ftable thead { position: sticky; top: 0; z-index: 2; }
+
+        .ftable th {
+            background: var(--bg-1);
+            color: var(--text-3);
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: left;
+            padding: 6px 12px;
+            border-bottom: 1px solid var(--border-0);
+        }
+
+        .ftable td {
+            padding: 0 12px;
+            height: 36px;
+            border-bottom: 1px solid var(--border-0);
+            font-size: 13px;
+            vertical-align: middle;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .ftable tbody tr { transition: background 80ms; }
+        .ftable tbody tr:hover { background: var(--bg-hover); }
+        .ftable tbody tr.selected { background: var(--bg-active); }
+
+        .col-name { width: 50%; }
+        .col-size { width: 12%; }
+        .col-modified { width: 22%; }
+        .col-actions { width: 16%; text-align: right; }
+
+        .file-entry { display: flex; align-items: center; gap: 10px; overflow: hidden; }
+
+        .file-entry svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            stroke-width: 1.5;
+        }
+
+        .file-entry .fname {
+            font-family: var(--mono);
+            font-size: 12.5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-entry .fname.is-dir { color: var(--blue); font-weight: 500; }
+
+        .cell-meta {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-3);
+        }
+
+        .cell-actions { text-align: right; }
+
+        .empty-view {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            color: var(--text-3);
+        }
+
+        .empty-view svg { width: 40px; height: 40px; stroke: var(--text-3); fill: none; stroke-width: 1; opacity: 0.4; }
+        .empty-view p { font-size: 13px; }
+
+        /* ═══════════ TRANSFERS ═══════════ */
+        .transfer-dock {
+            position: fixed;
+            bottom: 12px;
+            right: 12px;
+            width: 300px;
+            background: var(--bg-1);
+            border: 1px solid var(--border-1);
+            border-radius: 8px;
+            overflow: hidden;
+            display: none;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+            z-index: 200;
+        }
+
+        .transfer-dock.on { display: block; }
+
+        .transfer-dock-head {
+            height: 36px;
+            padding: 0 12px;
+            background: var(--bg-2);
+            border-bottom: 1px solid var(--border-0);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-1);
+        }
+
+        .transfer-dock-body { max-height: 260px; overflow-y: auto; }
+
+        .t-item { padding: 10px 12px; border-bottom: 1px solid var(--border-0); }
+        .t-item-name { font-family: var(--mono); font-size: 11px; color: var(--text-0); margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .t-item-bar { height: 2px; background: var(--border-1); border-radius: 1px; overflow: hidden; }
+        .t-item-fill { height: 100%; width: 10%; background: var(--blue); transition: width .3s, background .3s; }
+        .t-item-status { font-family: var(--mono); font-size: 10px; color: var(--text-3); margin-top: 4px; }
+
+        /* ═══════════ FOOTER ═══════════ */
+        .footer-bar {
+            height: 24px;
+            background: var(--bg-1);
+            border-top: 1px solid var(--border-0);
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-3);
+            flex-shrink: 0;
+        }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-1); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-2); }
+    </style>
+</head>
+<body>
+
+<!-- ═══ SVG DEFS ═══ -->
+<svg style="display:none">
+    <defs>
+        <symbol id="i-folder" viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-file" viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><polyline points="13 2 13 9 20 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" fill="none" stroke="currentColor" stroke-width="1.5"/><polyline points="14 2 14 8 20 8" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="1.5"/><line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="1.5"/></symbol>
+        <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><polyline points="21 15 16 10 5 21" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+        <symbol id="i-archive" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="3" width="22" height="5" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="10" y1="12" x2="14" y2="12" stroke="currentColor" stroke-width="1.5"/></symbol>
+        <symbol id="i-code" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><polyline points="8 6 2 12 8 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-key" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="18" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="18" cy="16" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+        <symbol id="i-film" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="7" y1="2" x2="7" y2="22" stroke="currentColor" stroke-width="1.5"/><line x1="17" y1="2" x2="17" y2="22" stroke="currentColor" stroke-width="1.5"/><line x1="2" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="1.5"/></symbol>
+        <symbol id="i-terminal" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="19" x2="20" y2="19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+        <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+        <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+        <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+        <symbol id="i-refresh" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-upload" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="12" x2="12" y2="21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+        <symbol id="i-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="14" y="3" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="14" y="14" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="14" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+        <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" stroke-width="1.5"/><line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="1.5"/></symbol>
+        <symbol id="i-back" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><polyline points="12 19 5 12 12 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    </defs>
+</svg>
+
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <h1>sOPown3d</h1>
+        <p>Command &amp; Control</p>
+    </div>
+    <div class="sidebar-nav">
+        <a href="/" class="nav-item"><svg><use href="#i-grid"/></svg> Dashboard</a>
+        <a href="/explorer" class="nav-item active"><svg><use href="#i-folder"/></svg> Explorer</a>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="toolbar">
+        <select class="toolbar-select" id="agentSel" onchange="pickAgent()">
+            <option value="">Select agent...</option>
+        </select>
+        <span id="agentBadge"></span>
+        <div class="toolbar-divider"></div>
+        <button class="icon-btn" onclick="toggleSearch()" title="Search"><svg><use href="#i-search"/></svg></button>
+        <button class="icon-btn" onclick="reload()" title="Refresh"><svg><use href="#i-refresh"/></svg></button>
+    </div>
+
+    <div class="breadcrumb-bar" id="bc"><span class="bc-segment" style="color:var(--text-3)">Select an agent to browse</span></div>
+
+    <div class="search-panel" id="sbar">
+        <div class="search-row">
+            <input class="search-input" type="text" id="sPat" placeholder="Pattern (*.txt, config.*)" onkeydown="if(event.key==='Enter')doSearch()">
+            <input class="search-input" type="text" id="sPath" placeholder="Path (C:\Users, /home)">
+            <select class="search-select" id="sDepth">
+                <option value="1">Depth 1</option>
+                <option value="2">Depth 2</option>
+                <option value="3" selected>Depth 3</option>
+                <option value="5">Depth 5</option>
+                <option value="10">Depth 10</option>
+            </select>
+            <button class="btn btn-primary" onclick="doSearch()"><svg><use href="#i-search"/></svg> Search</button>
+        </div>
+        <div class="tag-row">
+            <span class="tag" onclick="togExt(this,'.txt')">.txt</span>
+            <span class="tag" onclick="togExt(this,'.log')">.log</span>
+            <span class="tag" onclick="togExt(this,'.conf')">.conf</span>
+            <span class="tag" onclick="togExt(this,'.json')">.json</span>
+            <span class="tag" onclick="togExt(this,'.pdf')">.pdf</span>
+            <span class="tag" onclick="togExt(this,'.docx')">.docx</span>
+            <span class="tag" onclick="togExt(this,'.csv')">.csv</span>
+            <span class="tag" onclick="togExt(this,'.xml')">.xml</span>
+            <span class="tag" onclick="togExt(this,'.exe')">.exe</span>
+            <span class="tag" onclick="togExt(this,'.dll')">.dll</span>
+        </div>
+    </div>
+
+    <div class="status-bar" id="sts">
+        <div class="loader" id="stsLoad" style="display:none"></div>
+        <span id="stsTxt"></span>
+    </div>
+
+    <div class="table-area">
+        <div class="table-scroll">
+            <table class="ftable">
+                <thead><tr>
+                    <th class="col-name">Name</th>
+                    <th class="col-size">Size</th>
+                    <th class="col-modified">Modified</th>
+                    <th class="col-actions">Actions</th>
+                </tr></thead>
+                <tbody id="fb"></tbody>
+            </table>
+        </div>
+        <div class="empty-view" id="emp">
+            <svg><use href="#i-folder"/></svg>
+            <p>Select an agent to start browsing</p>
+        </div>
+    </div>
+
+    <div class="footer-bar">
+        <span id="fInfo">Ready</span>
+        <span id="fPath"></span>
+    </div>
+</div>
+
+<div class="transfer-dock" id="tp">
+    <div class="transfer-dock-head"><span>Transfers</span><span id="tCnt">0</span></div>
+    <div class="transfer-dock-body" id="tl"></div>
+</div>
+
+<script>
+    let agent=null, cPath='', exts=[], cache={}, sMode=false;
+    const $=id=>document.getElementById(id);
+
+    document.addEventListener('DOMContentLoaded', loadAgents);
+
+    async function loadAgents(){
+        try{const r=await fetch('/api/agents');const d=await r.json();const a=(d.agents||[]).filter(x=>x.is_active);
+            $('agentSel').innerHTML='<option value="">Select agent...</option>'+a.map(x=>`<option value="${x.agent_id}">${x.hostname} (${x.os})</option>`).join('');}
+        catch(e){sts('Failed to load agents','err');}
+    }
+
+    function pickAgent(){
+        const id=$('agentSel').value;
+        if(id){agent=id;$('agentBadge').innerHTML='<span class="agent-indicator"><span class="dot"></span>online</span>';cache={};go('');}
+        else{agent=null;$('agentBadge').innerHTML='';empty('Select an agent to start browsing');}
+    }
+
+    async function go(path){
+        if(!agent)return; sMode=false; cPath=path; updBC(); $('fPath').textContent=path||'root';
+        const k=agent+':'+path; if(cache[k]){render(cache[k]);return;}
+        sts('Listing directory...','wait');
+        try{const r=await fetch('/api/files/list',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent_id:agent,path:path})});
+            const d=await r.json();if(d.status==='queued')pollList(d.command_id,k);}catch(e){sts('Failed: '+e.message,'err');}
+    }
+
+    async function pollList(id,k){let n=0;const iv=setInterval(async()=>{n++;try{const r=await fetch(`/api/files/list-results/${id}`);const d=await r.json();
+        if(d.status==='completed'){clearInterval(iv);const e=d.results||[];cache[k]=e;render(e);sts(e.length+' entries','ok');hideSts(2000);}
+        else if(d.status==='error'){clearInterval(iv);sts('Listing error','err');}
+        else if(n>=60){clearInterval(iv);sts('Timeout — agent offline?','err');}}catch(e){}},500);}
+
+    function reload(){delete cache[agent+':'+cPath];go(cPath);}
+    function toggleSearch(){$('sbar').classList.toggle('open');if($('sbar').classList.contains('open'))$('sPat').focus();}
+    function togExt(el,x){el.classList.toggle('on');exts.includes(x)?exts=exts.filter(e=>e!==x):exts.push(x);}
+
+    async function doSearch(){
+        if(!agent){alert('Select an agent');return;}
+        const pat=$('sPat').value.trim(),path=$('sPath').value.trim(),dep=+$('sDepth').value;
+        if(!pat&&!exts.length){alert('Enter pattern or select extensions');return;}
+        sMode=true;sts('Searching...','wait');
+        try{const r=await fetch('/api/files/search',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({agent_id:agent,pattern:pat||'*',search_paths:path?[path]:[],extensions:exts,max_depth:dep})});
+            const d=await r.json();if(d.status==='queued')pollSearch(d.command_id);}catch(e){sts('Search failed','err');}
+    }
+
+    async function pollSearch(id){let n=0;const iv=setInterval(async()=>{n++;try{const r=await fetch(`/api/files/search-results/${id}`);const d=await r.json();
+        if(d.status==='completed'){clearInterval(iv);renderSearch(d.results||[]);sts('Found '+(d.result_count||0)+' files','ok');hideSts(3000);}
+        else if(d.status==='error'){clearInterval(iv);sts('Search error','err');}
+        else if(n>=120){clearInterval(iv);sts('Timeout','err');}}catch(e){}},1000);}
+
+    function render(entries){
+        const tb=$('fb'),em=$('emp');
+        if(!entries||!entries.length){tb.innerHTML='';em.style.display='flex';em.querySelector('p').textContent='Empty directory';return;}
+        em.style.display='none';
+        const sorted=[...entries].sort((a,b)=>{if(a.is_dir&&!b.is_dir)return -1;if(!a.is_dir&&b.is_dir)return 1;return(a.name||a.file_name||'').localeCompare(b.name||b.file_name||'');});
+        tb.innerHTML=sorted.map(e=>{
+            const nm=e.name||e.file_name||'',fp=e.path||e.file_path||'',dir=e.is_dir;
+            const sz=dir?'':fmtSz(e.size||e.file_size||0),mt=fmtDt(e.mod_time),ic=dir?'i-folder':fIcon(nm);
+            return `<tr ondblclick="${dir?`go('${esc(fp)}')`:''}" onclick="sel(this)">
+        <td><div class="file-entry"><svg style="color:${dir?'var(--blue)':'var(--text-2)'}"><use href="#${ic}"/></svg><span class="fname ${dir?'is-dir':''}">${html(nm)}</span></div></td>
+        <td class="cell-meta">${sz}</td><td class="cell-meta">${mt}</td>
+        <td class="cell-actions">${dir?`<button class="btn btn-sm" onclick="event.stopPropagation();go('${esc(fp)}')">Open</button>`
+                :`<button class="btn btn-sm" onclick="event.stopPropagation();xfer('${esc(fp)}','${html(nm)}')"><svg style="width:12px;height:12px"><use href="#i-upload"/></svg> Get</button>`}</td></tr>`;
+        }).join('');
+        const dirs=sorted.filter(e=>e.is_dir).length;$('fInfo').textContent=`${dirs} folders, ${sorted.length-dirs} files`;
+    }
+
+    function renderSearch(results){
+        $('bc').innerHTML='<span class="bc-segment" style="color:var(--blue)"><svg style="width:12px;height:12px;vertical-align:middle;margin-right:4px"><use href="#i-search"/></svg>Search Results</span>'+
+            `<span class="bc-chevron"><svg><use href="#i-chevron"/></svg></span><span style="color:var(--text-3);font-size:12px">${results.length} files</span>`+
+            `<span style="margin-left:auto"><span class="bc-segment" onclick="go(cPath)"><svg style="width:12px;height:12px;vertical-align:middle;margin-right:2px"><use href="#i-back"/></svg>Back</span></span>`;
+        const tb=$('fb'),em=$('emp');
+        if(!results||!results.length){tb.innerHTML='';em.style.display='flex';em.querySelector('p').textContent='No files found';return;}
+        em.style.display='none';
+        tb.innerHTML=results.map(f=>{const nm=f.name||f.file_name||'',fp=f.path||f.file_path||'';
+            return `<tr onclick="sel(this)"><td><div class="file-entry"><svg style="color:var(--text-2)"><use href="#${fIcon(nm)}"/></svg><span class="fname">${html(fp)}</span></div></td>
+    <td class="cell-meta">${fmtSz(f.size||f.file_size||0)}</td><td class="cell-meta">${fmtDt(f.mod_time)}</td>
+    <td class="cell-actions"><button class="btn btn-sm" onclick="event.stopPropagation();xfer('${esc(fp)}','${html(nm)}')"><svg style="width:12px;height:12px"><use href="#i-upload"/></svg> Get</button></td></tr>`;
+        }).join('');$('fInfo').textContent='Search: '+results.length+' results';
+    }
+
+    function sel(tr){document.querySelectorAll('.ftable tbody tr').forEach(r=>r.classList.remove('selected'));tr.classList.add('selected');}
+
+    function updBC(){
+        const el=$('bc');
+        if(!cPath){el.innerHTML=`<span class="bc-segment" onclick="go('')"><svg style="width:12px;height:12px;vertical-align:middle;margin-right:4px"><use href="#i-monitor"/></svg>${agent||'Root'}</span>`;return;}
+        const win=cPath.includes('\\')||/^[A-Z]:/i.test(cPath),sep=win?'\\':'/';
+        const parts=cPath.split(/[\/\\]/).filter(Boolean);
+        let h=`<span class="bc-segment" onclick="go('')"><svg style="width:12px;height:12px;vertical-align:middle;margin-right:4px"><use href="#i-monitor"/></svg>${agent}</span>`,acc='';
+        parts.forEach((p,i)=>{acc+=(i===0&&win?'':sep)+p;if(i===0&&win&&p.endsWith(':'))acc=p+'\\';
+            h+=`<span class="bc-chevron"><svg><use href="#i-chevron"/></svg></span><span class="bc-segment" onclick="go('${esc(acc)}')">${html(p)}</span>`;});
+        el.innerHTML=h;
+    }
+
+    async function xfer(fp,nm){
+        if(!agent)return;const tid=Date.now();$('tp').classList.add('on');addT(tid,nm);
+        try{const r=await fetch('/api/files/transfer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent_id:agent,file_path:fp})});
+            const d=await r.json();if(d.status==='queued'){updT(tid,'Queued...');pollT(tid,d.command_id);}else updT(tid,'Failed',true);}
+        catch(e){updT(tid,'Error',true);}
+    }
+    async function pollT(tid,id){const iv=setInterval(async()=>{try{const r=await fetch(`/api/files/transfer-status/${id}`);const d=await r.json();
+        if(d.status==='completed'){clearInterval(iv);updT(tid,'Done',false,true);setTimeout(()=>rmT(tid),4000);}
+        else if(d.status==='error'){clearInterval(iv);updT(tid,'Failed',true);}}catch(e){}},1000);}
+    function addT(id,nm){const el=document.createElement('div');el.className='t-item';el.id='t-'+id;
+        el.innerHTML=`<div class="t-item-name">${html(nm)}</div><div class="t-item-bar"><div class="t-item-fill"></div></div><div class="t-item-status">Init...</div>`;
+        $('tl').appendChild(el);updTCnt();}
+    function updT(id,msg,err,done){const el=document.getElementById('t-'+id);if(!el)return;
+        el.querySelector('.t-item-status').textContent=msg;el.querySelector('.t-item-status').style.color=err?'var(--red)':(done?'var(--green)':'');
+        const b=el.querySelector('.t-item-fill');b.style.width='100%';b.style.background=err?'var(--red)':(done?'var(--green)':'var(--blue)');}
+    function rmT(id){const el=document.getElementById('t-'+id);if(el)el.remove();updTCnt();if(!$('tl').children.length)$('tp').classList.remove('on');}
+    function updTCnt(){$('tCnt').textContent=$('tl').children.length;}
+
+    function sts(msg,type){$('sts').className='status-bar on '+type;$('stsLoad').style.display=type==='wait'?'block':'none';$('stsTxt').textContent=msg;}
+    function hideSts(ms){setTimeout(()=>$('sts').classList.remove('on'),ms);}
+    function empty(msg){$('fb').innerHTML='';const e=$('emp');e.style.display='flex';e.querySelector('p').textContent=msg;}
+
+    function fIcon(n){const x=(n||'').split('.').pop().toLowerCase();
+        const m={txt:'i-file-text',log:'i-file-text',conf:'i-settings',cfg:'i-settings',ini:'i-settings',json:'i-code',xml:'i-code',html:'i-code',css:'i-code',js:'i-code',
+            py:'i-code',go:'i-code',rs:'i-code',c:'i-code',cpp:'i-code',h:'i-code',java:'i-code',sh:'i-terminal',bat:'i-terminal',ps1:'i-terminal',cmd:'i-terminal',
+            jpg:'i-image',jpeg:'i-image',png:'i-image',gif:'i-image',bmp:'i-image',svg:'i-image',webp:'i-image',
+            zip:'i-archive',tar:'i-archive',gz:'i-archive',rar:'i-archive','7z':'i-archive',
+            mp3:'i-music',wav:'i-music',flac:'i-music',ogg:'i-music',
+            mp4:'i-film',avi:'i-film',mkv:'i-film',mov:'i-film',wmv:'i-film',
+            key:'i-key',pem:'i-key',crt:'i-key',cer:'i-key',pfx:'i-key',
+            pdf:'i-file-text',docx:'i-file-text',doc:'i-file-text',xlsx:'i-file-text',xls:'i-file-text',csv:'i-file-text',
+            sql:'i-database',db:'i-database',sqlite:'i-database',
+            exe:'i-terminal',dll:'i-settings',sys:'i-settings',msi:'i-archive'};
+        return m[x]||'i-file';}
+
+    function fmtSz(b){if(!b)return '0 B';const k=1024,s=['B','KB','MB','GB','TB'],i=Math.floor(Math.log(b)/Math.log(k));return(b/Math.pow(k,i)).toFixed(i>0?1:0)+' '+s[i];}
+    function fmtDt(t){if(!t)return '';const d=new Date(t);return isNaN(d)?'':d.toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}
+    function esc(p){return(p||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+    function html(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+</script>
+</body>
+</html>

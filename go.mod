@@ -3,6 +3,7 @@ module sOPown3d
 go 1.25
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/pgx/v5 v5.8.0
 	golang.org/x/sys v0.40.0

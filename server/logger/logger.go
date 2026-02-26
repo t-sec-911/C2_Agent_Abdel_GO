@@ -91,4 +91,7 @@ const (
 	CategoryError      = "❌"
 	CategorySuccess    = "✓"
 	CategoryWebSocket  = "WS"
+	CategorySecurity   = "🔒"
+	CategoryServer     = "🖥️"
+	CategoryFiles      = "📁"
 )
